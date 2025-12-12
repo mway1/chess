@@ -657,10 +657,9 @@ fmt.Println(game.Position().Board().Draw())
 */
 ```
 
-### Move History
+### Moves
 
-Move History is a convenient API for accessing aligned positions, moves, and comments. Move
-History is useful when trying to understand detailed information about a game. Below is an
+Moves is a convenient API for accessing aligned positions, moves, and comments. Moves is useful when trying to understand detailed information about a game. Below is an
 example showing how to see which side castled first.
 
 ```go
@@ -685,9 +684,9 @@ func main() {
 	}
 	game := chess.NewGame(pgn)
 	color := chess.NoColor
-	for _, mh := range game.MoveHistory() {
-		if mh.Move.HasTag(chess.KingSideCastle) || mh.Move.HasTag(chess.QueenSideCastle) {
-			color = mh.PrePosition.Turn()
+	for _, mh := range game.Moves() {
+		if mh.HasTag(chess.KingSideCastle) || mh.HasTag(chess.QueenSideCastle) {
+			color = mh.Position().Turn()
 			break
 		}
 	}
