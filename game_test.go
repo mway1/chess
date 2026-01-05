@@ -2261,3 +2261,115 @@ func TestIgnoreInsufficientMaterialDraw(t *testing.T) {
 		t.Fatal("ignoreInsufficientMaterialDraw should be true after being ignored")
 	}
 }
+
+func TestCastlingInteractions(t *testing.T) {
+	tests := []struct {
+		name        string
+		fen         string
+		firstMove   string
+		secondMove  string
+		shouldAllow bool
+	}{
+		// No Pawns (Blocked)
+		{
+			name:        "No Pawns: White O-O then Black O-O",
+			fen:         "r3k2r/8/8/8/8/8/8/R3K2R w KQkq - 0 1",
+			firstMove:   "O-O",
+			secondMove:  "O-O",
+			shouldAllow: false,
+		},
+		{
+			name:        "No Pawns: White O-O-O then Black O-O-O",
+			fen:         "r3k2r/8/8/8/8/8/8/R3K2R w KQkq - 0 1",
+			firstMove:   "O-O-O",
+			secondMove:  "O-O-O",
+			shouldAllow: false,
+		},
+		{
+			name:        "No Pawns: Black O-O then White O-O",
+			fen:         "r3k2r/8/8/8/8/8/8/R3K2R b KQkq - 0 1",
+			firstMove:   "O-O",
+			secondMove:  "O-O",
+			shouldAllow: false,
+		},
+		{
+			name:        "No Pawns: Black O-O-O then White O-O-O",
+			fen:         "r3k2r/8/8/8/8/8/8/R3K2R b KQkq - 0 1",
+			firstMove:   "O-O-O",
+			secondMove:  "O-O-O",
+			shouldAllow: false,
+		},
+		// With Pawns (Allowed)
+		{
+			name:        "With Pawns: White O-O then Black O-O",
+			fen:         "r3k2r/5p2/8/8/8/8/5P2/R3K2R w KQkq - 0 1", // Pawns at f2, f7
+			firstMove:   "O-O",
+			secondMove:  "O-O",
+			shouldAllow: true,
+		},
+		{
+			name:        "With Pawns: White O-O-O then Black O-O-O",
+			fen:         "r3k2r/3p4/8/8/8/8/3P4/R3K2R w KQkq - 0 1", // Pawns at d2, d7
+			firstMove:   "O-O-O",
+			secondMove:  "O-O-O",
+			shouldAllow: true,
+		},
+		{
+			name:        "With Pawns: Black O-O then White O-O",
+			fen:         "r3k2r/5p2/8/8/8/8/5P2/R3K2R b KQkq - 0 1", // Pawns at f2, f7
+			firstMove:   "O-O",
+			secondMove:  "O-O",
+			shouldAllow: true,
+		},
+		{
+			name:        "With Pawns: Black O-O-O then White O-O-O",
+			fen:         "r3k2r/3p4/8/8/8/8/3P4/R3K2R b KQkq - 0 1", // Pawns at d2, d7
+			firstMove:   "O-O-O",
+			secondMove:  "O-O-O",
+			shouldAllow: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			fen, err := FEN(tt.fen)
+			if err != nil {
+				t.Fatalf("Invalid FEN: %v", err)
+			}
+			g := NewGame(fen)
+
+			// Make first move
+			pos := g.Position()
+			m1, err := AlgebraicNotation{}.Decode(pos, tt.firstMove)
+			if err != nil {
+				t.Fatalf("Failed to decode first move %s: %v", tt.firstMove, err)
+			}
+			if err := g.Move(m1, nil); err != nil {
+				t.Fatalf("Failed to make first move %s: %v", tt.firstMove, err)
+			}
+
+			// Check if second move is valid
+			validMoves := g.ValidMoves()
+			isAllowed := false
+
+			// Determine expected tag based on second move string
+			var expectedTag MoveTag
+			if tt.secondMove == "O-O" {
+				expectedTag = KingSideCastle
+			} else {
+				expectedTag = QueenSideCastle
+			}
+
+			for _, m := range validMoves {
+				if m.HasTag(expectedTag) {
+					isAllowed = true
+					break
+				}
+			}
+
+			if isAllowed != tt.shouldAllow {
+				t.Errorf("Castling allowed: %v, want: %v", isAllowed, tt.shouldAllow)
+			}
+		})
+	}
+}
