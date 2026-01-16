@@ -775,11 +775,10 @@ func parseSquare(s string) Square {
 	return Square(rank*8 + file)
 }
 
-func looksLikeCoordinateMoves(s string) bool {
-	if strings.ContainsAny(s, "[]{}()") {
+func isUciNotationMoves(s string) bool {
+	if isContainsTags(s) {
 		return false
 	}
-
 	toks := splitMoveTokens(s)
 	if len(toks) == 0 {
 		return false
@@ -787,7 +786,7 @@ func looksLikeCoordinateMoves(s string) bool {
 
 	ok := 0
 	for _, t := range toks {
-		if isCoordinateMoveToken(t) {
+		if isUciNotationMoveToken(t) {
 			ok++
 		}
 	}
@@ -808,7 +807,7 @@ func splitMoveTokens(s string) []string {
 	return out
 }
 
-func isCoordinateMoveToken(t string) bool {
+func isUciNotationMoveToken(t string) bool {
 	t = strings.TrimSpace(t)
 	if len(t) != 4 && len(t) != 5 {
 		return false
@@ -827,7 +826,7 @@ func isCoordinateMoveToken(t string) bool {
 	return true
 }
 
-func parseCoordinateMovesGame(s string) (*Game, error) {
+func parseUciNotationGame(s string) (*Game, error) {
 	game := NewGame()
 
 	toks := splitMoveTokens(s)
@@ -839,11 +838,11 @@ func parseCoordinateMovesGame(s string) (*Game, error) {
 		if tok == "*" || tok == "" {
 			continue
 		}
-		if !isCoordinateMoveToken(tok) {
+		if !isUciNotationMoveToken(tok) {
 			return nil, fmt.Errorf("invalid coordinate move token at %d: %q", i, tok)
 		}
 
-		mv, err := coordinateTokenToLegalMove(game.pos, tok)
+		mv, err := uciNotationTokenToLegalMove(game.pos, tok)
 		if err != nil {
 			return nil, fmt.Errorf("illegal move %q at %d: %w", tok, i, err)
 		}
@@ -876,7 +875,7 @@ func addMoveToGame(game *Game, move *Move) {
 	game.currentMove = move
 }
 
-func coordinateTokenToLegalMove(pos *Position, tok string) (*Move, error) {
+func uciNotationTokenToLegalMove(pos *Position, tok string) (*Move, error) {
 	s1 := parseSquare(tok[0:2])
 	s2 := parseSquare(tok[2:4])
 	if s1 == NoSquare || s2 == NoSquare {
@@ -922,4 +921,20 @@ func coordinateTokenToLegalMove(pos *Position, tok string) (*Move, error) {
 	}
 
 	return nil, fmt.Errorf("no matching legal move for %q", tok)
+}
+
+func isContainsTags(s string) bool {
+	for _, ch := range []string{
+		TagStart.String(),
+		TagEnd.String(),
+		CommentStart.String(),
+		CommentEnd.String(),
+		VariationStart.String(),
+		VariationEnd.String(),
+	} {
+		if strings.Contains(s, ch) {
+			return false
+		}
+	}
+	return true
 }

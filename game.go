@@ -115,8 +115,8 @@ func PGN(r io.Reader) (func(*Game), error) {
 		return func(g *Game) { g.copy(empty) }, nil
 	}
 
-	if looksLikeCoordinateMoves(s) {
-		game, err := parseCoordinateMovesGame(s)
+	if isUciNotationMoves(s) {
+		game, err := parseUciNotationGame(s)
 		if err != nil {
 			return nil, err
 		}
@@ -126,7 +126,7 @@ func PGN(r io.Reader) (func(*Game), error) {
 	scanner := NewScanner(bytes.NewReader(raw))
 
 	if !scanner.HasNext() {
-		game, err := parseCoordinateMovesGame(s)
+		game, err := parseUciNotationGame(s)
 		if err == nil {
 			return func(g *Game) {
 				g.copy(game)
