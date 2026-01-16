@@ -2376,7 +2376,7 @@ func TestCastlingInteractions(t *testing.T) {
 	}
 }
 
-func TestPGN(t *testing.T) {
+func TestPGNWithEmptyOrUciMoves(t *testing.T) {
 	r := require.New(t)
 	testCases := []struct {
 		pgn        string
