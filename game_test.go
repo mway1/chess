@@ -2390,6 +2390,7 @@ func TestPGNWithEmptyOrUciMoves(t *testing.T) {
 		{"asd", false, 0},
 		{"e2e4 g7g12", false, 0},
 		{"e2e4 d1f3", false, 0},
+		{"1. a4 *", true, 1},
 	}
 
 	for _, tc := range testCases {
