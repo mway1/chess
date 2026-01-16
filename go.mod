@@ -4,5 +4,12 @@ go 1.22.0
 
 require (
 	github.com/ajstarks/svgo v0.0.0-20211024235047-1546f124cd8b
+	github.com/stretchr/testify v1.11.1
 	golang.org/x/exp v0.0.0-20250128182459-e0ece0dbea4c
+)
+
+require (
+	github.com/davecgh/go-spew v1.1.1 // indirect
+	github.com/pmezard/go-difflib v1.0.0 // indirect
+	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

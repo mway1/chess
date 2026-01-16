@@ -6,6 +6,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestCheckmate(t *testing.T) {
@@ -2371,5 +2373,34 @@ func TestCastlingInteractions(t *testing.T) {
 				t.Errorf("Castling allowed: %v, want: %v", isAllowed, tt.shouldAllow)
 			}
 		})
+	}
+}
+
+func TestPGN(t *testing.T) {
+	r := require.New(t)
+	testCases := []struct {
+		pgn        string
+		isParse    bool
+		movesCount int
+	}{
+		{"", true, 0},
+		{"*", true, 0},
+		{"e2e4", true, 1},
+		{"e2e4 g7g6 f1c4 f8g7 d1f3 e7e6 d2d4 g7d4", true, 8},
+		{"asd", false, 0},
+		{"e2e4 g7g12", false, 0},
+		{"e2e4 d1f3", false, 0},
+	}
+
+	for _, tc := range testCases {
+		pgn := strings.TrimSpace(tc.pgn)
+		gen, err := PGN(strings.NewReader(pgn))
+		if tc.isParse {
+			r.NoError(err)
+			game := NewGame(gen)
+			r.Len(game.Moves(), tc.movesCount)
+			continue
+		}
+		r.Error(err)
 	}
 }

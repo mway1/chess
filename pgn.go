@@ -17,6 +17,7 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"strings"
 
 	"golang.org/x/exp/maps"
 )
@@ -772,4 +773,164 @@ func parseSquare(s string) Square {
 	}
 
 	return Square(rank*8 + file)
+}
+
+func newEmptyGame() *Game {
+	rootMove := &Move{position: StartingPosition()}
+	return &Game{
+		tagPairs:    make(TagPairs),
+		pos:         StartingPosition(),
+		rootMove:    rootMove,
+		currentMove: rootMove,
+		outcome:     NoOutcome,
+	}
+}
+
+func looksLikeCoordinateMoves(s string) bool {
+	if strings.ContainsAny(s, "[]{}()") {
+		return false
+	}
+
+	toks := splitMoveTokens(s)
+	if len(toks) == 0 {
+		return false
+	}
+
+	ok := 0
+	for _, t := range toks {
+		if isCoordinateMoveToken(t) {
+			ok++
+		}
+	}
+	return ok == len(toks)
+}
+
+func splitMoveTokens(s string) []string {
+	raw := strings.Fields(s)
+	out := make([]string, 0, len(raw))
+	for _, t := range raw {
+		t = strings.TrimSpace(t)
+		t = strings.Trim(t, ",;")
+		if t == "" {
+			continue
+		}
+		out = append(out, t)
+	}
+	return out
+}
+
+func isCoordinateMoveToken(t string) bool {
+	t = strings.TrimSpace(t)
+	if len(t) != 4 && len(t) != 5 {
+		return false
+	}
+	if !isFile(t[0]) || !isRank(t[1]) || !isFile(t[2]) || !isRank(t[3]) {
+		return false
+	}
+	if len(t) == 5 {
+		switch t[4] {
+		case 'q', 'r', 'b', 'n', 'Q', 'R', 'B', 'N':
+			return true
+		default:
+			return false
+		}
+	}
+	return true
+}
+
+func parseCoordinateMovesGame(s string) (*Game, error) {
+	game := newEmptyGame()
+
+	toks := splitMoveTokens(s)
+	if len(toks) == 0 {
+		return game, nil
+	}
+
+	for i, tok := range toks {
+		if tok == "*" || tok == "" {
+			continue
+		}
+		if !isCoordinateMoveToken(tok) {
+			return nil, fmt.Errorf("invalid coordinate move token at %d: %q", i, tok)
+		}
+
+		mv, err := coordinateTokenToLegalMove(game.pos, tok)
+		if err != nil {
+			return nil, fmt.Errorf("illegal move %q at %d: %w", tok, i, err)
+		}
+
+		addMoveToGame(game, mv)
+	}
+
+	if game.outcome == UnknownOutcome {
+		game.outcome = NoOutcome
+	}
+	return game, nil
+}
+
+func addMoveToGame(game *Game, move *Move) {
+	if game.currentMove == game.rootMove {
+		move.parent = game.rootMove
+		game.rootMove.children = append(game.rootMove.children, move)
+	} else {
+		move.parent = game.currentMove
+		game.currentMove.children = append(game.currentMove.children, move)
+	}
+
+	move.position = game.pos.copy()
+
+	if newPos := game.pos.Update(move); newPos != nil {
+		game.pos = newPos
+		game.evaluatePositionStatus()
+	}
+
+	game.currentMove = move
+}
+
+func coordinateTokenToLegalMove(pos *Position, tok string) (*Move, error) {
+	s1 := parseSquare(tok[0:2])
+	s2 := parseSquare(tok[2:4])
+	if s1 == NoSquare || s2 == NoSquare {
+		return nil, fmt.Errorf("bad squares: %q", tok)
+	}
+
+	promo := NoPieceType
+	if len(tok) == 5 {
+		switch tok[4] {
+		case 'q', 'Q':
+			promo = Queen
+		case 'r', 'R':
+			promo = Rook
+		case 'b', 'B':
+			promo = Bishop
+		case 'n', 'N':
+			promo = Knight
+		default:
+			return nil, fmt.Errorf("bad promotion piece: %q", tok)
+		}
+	}
+
+	valid := pos.ValidMoves()
+	for _, m := range valid {
+		if m.S1() != s1 || m.S2() != s2 {
+			continue
+		}
+		if promo != NoPieceType && m.promo != promo {
+			continue
+		}
+		if promo == NoPieceType && m.promo != NoPieceType {
+			continue
+		}
+
+		mv := &Move{
+			s1:       m.S1(),
+			s2:       m.S2(),
+			tags:     m.tags,
+			promo:    m.promo,
+			position: pos.copy(),
+		}
+		return mv, nil
+	}
+
+	return nil, fmt.Errorf("no matching legal move for %q", tok)
 }

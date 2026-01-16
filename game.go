@@ -104,9 +104,32 @@ type Game struct {
 // function is designed to be used in the NewGame constructor.
 // An error is returned if there is a problem parsing the PGN data.
 func PGN(r io.Reader) (func(*Game), error) {
-	scanner := NewScanner(r)
+	raw, err := io.ReadAll(r)
+	if err != nil {
+		return nil, err
+	}
+
+	s := strings.TrimSpace(string(raw))
+	if s == "" || s == "*" {
+		empty := newEmptyGame()
+		return func(g *Game) { g.copy(empty) }, nil
+	}
+
+	if looksLikeCoordinateMoves(s) {
+		game, err := parseCoordinateMovesGame(s)
+		if err != nil {
+			return nil, err
+		}
+		return func(g *Game) { g.copy(game) }, nil
+	}
+
+	scanner := NewScanner(bytes.NewReader(raw))
 
 	if !scanner.HasNext() {
+		game, err := parseCoordinateMovesGame(s)
+		if err == nil {
+			return func(g *Game) { g.copy(game) }, nil
+		}
 		return nil, ErrNoGameFound
 	}
 
@@ -126,10 +149,7 @@ func PGN(r io.Reader) (func(*Game), error) {
 		return nil, err
 	}
 
-	// Return a function that updates the game with the parsed game state
-	return func(g *Game) {
-		g.copy(game)
-	}, nil
+	return func(g *Game) { g.copy(game) }, nil
 }
 
 // FEN takes a string and returns a function that updates
