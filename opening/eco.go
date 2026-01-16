@@ -34,7 +34,7 @@ func NewBookECO() *BookECO {
 		startingPosition: startingPosition,
 	}
 	b.root.label = b.label()
-	r := csv.NewReader(bytes.NewBuffer(ecoDatas))
+	r := csv.NewReader(bytes.NewBuffer(ecoData))
 	r.Comma = '\t'
 	records, err := r.ReadAll()
 	if err != nil {
