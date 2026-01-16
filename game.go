@@ -110,8 +110,8 @@ func PGN(r io.Reader) (func(*Game), error) {
 	}
 
 	s := strings.TrimSpace(string(raw))
-	if s == "" || s == "*" {
-		empty := newEmptyGame()
+	if s == string(UnknownOutcome) || s == string(NoOutcome) {
+		empty := NewGame()
 		return func(g *Game) { g.copy(empty) }, nil
 	}
 

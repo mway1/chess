@@ -775,17 +775,6 @@ func parseSquare(s string) Square {
 	return Square(rank*8 + file)
 }
 
-func newEmptyGame() *Game {
-	rootMove := &Move{position: StartingPosition()}
-	return &Game{
-		tagPairs:    make(TagPairs),
-		pos:         StartingPosition(),
-		rootMove:    rootMove,
-		currentMove: rootMove,
-		outcome:     NoOutcome,
-	}
-}
-
 func looksLikeCoordinateMoves(s string) bool {
 	if strings.ContainsAny(s, "[]{}()") {
 		return false
@@ -839,7 +828,7 @@ func isCoordinateMoveToken(t string) bool {
 }
 
 func parseCoordinateMovesGame(s string) (*Game, error) {
-	game := newEmptyGame()
+	game := NewGame()
 
 	toks := splitMoveTokens(s)
 	if len(toks) == 0 {
