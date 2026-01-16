@@ -685,8 +685,8 @@ func (g *Game) GetTagPair(k string) string {
 	return g.tagPairs[k]
 }
 
-// TagPairs returns the tag pairs in key value format.
-func (g *Game) TagPairs() TagPairs {
+// GetTagPairs returns the tag pairs in key value format.
+func (g *Game) GetTagPairs() TagPairs {
 	return g.tagPairs
 }
 
