@@ -685,6 +685,11 @@ func (g *Game) GetTagPair(k string) string {
 	return g.tagPairs[k]
 }
 
+// TagPairs returns the tag pairs in key value format.
+func (g *Game) TagPairs() TagPairs {
+	return g.tagPairs
+}
+
 // RemoveTagPair removes the tag pair for the given key and
 // returns true if a tag pair was removed.
 func (g *Game) RemoveTagPair(k string) bool {
