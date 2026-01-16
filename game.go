@@ -128,7 +128,9 @@ func PGN(r io.Reader) (func(*Game), error) {
 	if !scanner.HasNext() {
 		game, err := parseCoordinateMovesGame(s)
 		if err == nil {
-			return func(g *Game) { g.copy(game) }, nil
+			return func(g *Game) {
+				g.copy(game)
+			}, nil
 		}
 		return nil, ErrNoGameFound
 	}
@@ -149,7 +151,10 @@ func PGN(r io.Reader) (func(*Game), error) {
 		return nil, err
 	}
 
-	return func(g *Game) { g.copy(game) }, nil
+	// Return a function that updates the game with the parsed game state
+	return func(g *Game) {
+		g.copy(game)
+	}, nil
 }
 
 // FEN takes a string and returns a function that updates
