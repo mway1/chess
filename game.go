@@ -104,9 +104,34 @@ type Game struct {
 // function is designed to be used in the NewGame constructor.
 // An error is returned if there is a problem parsing the PGN data.
 func PGN(r io.Reader) (func(*Game), error) {
-	scanner := NewScanner(r)
+	raw, err := io.ReadAll(r)
+	if err != nil {
+		return nil, err
+	}
+
+	s := strings.TrimSpace(string(raw))
+	if s == string(UnknownOutcome) || s == string(NoOutcome) {
+		empty := NewGame()
+		return func(g *Game) { g.copy(empty) }, nil
+	}
+
+	if isUciNotationMoves(s) {
+		game, err := parseUciNotationGame(s)
+		if err != nil {
+			return nil, err
+		}
+		return func(g *Game) { g.copy(game) }, nil
+	}
+
+	scanner := NewScanner(bytes.NewReader(raw))
 
 	if !scanner.HasNext() {
+		game, err := parseUciNotationGame(s)
+		if err == nil {
+			return func(g *Game) {
+				g.copy(game)
+			}, nil
+		}
 		return nil, ErrNoGameFound
 	}
 
@@ -658,6 +683,11 @@ func (g *Game) AddTagPair(k, v string) bool {
 // if it is not present.
 func (g *Game) GetTagPair(k string) string {
 	return g.tagPairs[k]
+}
+
+// GetTagPairs returns the tag pairs in key value format.
+func (g *Game) GetTagPairs() TagPairs {
+	return g.tagPairs
 }
 
 // RemoveTagPair removes the tag pair for the given key and
